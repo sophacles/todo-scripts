@@ -173,7 +173,7 @@ class TodoFile(object):
         self.filename = filename
 
     def __str__(self):
-        return "\n".join(str(task) for task in self.tasks)
+        return "\n".join(str(task) for task in self.tasks) + "\n"
 
     def open(self):
         try:
