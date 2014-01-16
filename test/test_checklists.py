@@ -346,7 +346,7 @@ class TestHelpers(TestCase):
     def setUp(self):
         #monkey patch get_today in checklists
         self.old_get_today = checklists.get_today
-        #checklists.get_today = lambda: date(2013,12,21) # a saturday
+        checklists.get_today = lambda: date(2013,12,21) # a saturday
 
     def tearDown(self):
         # remove monkeypatch
@@ -380,10 +380,10 @@ class TestHelpers(TestCase):
            ]"""
 
         items = parse_cl_items(json_input)
-        self.assertTrue(items.has_key('testweekly') and isinstance(items['testweekly'], Weekly))
-        self.assertTrue(items.has_key('testdaily') and isinstance(items['testdaily'], Daily))
-        self.assertTrue(items.has_key('testmonthly') and isinstance(items['testmonthly'], Monthly))
-        self.assertTrue(items.has_key('testfloating') and isinstance(items['testfloating'], Floating))
+        self.assertTrue(isinstance(items[0], Daily))
+        self.assertTrue(isinstance(items[1], Weekly))
+        self.assertTrue(isinstance(items[2], Monthly))
+        self.assertTrue(isinstance(items[3], Floating))
         output_json = serialize_cl_items(items)
         baseval = json.loads(json_input)
         baseval.sort()
@@ -427,9 +427,11 @@ class TestHelpers(TestCase):
             if cid == 'reports':
                 if t.done == False or status != "incomplete":
                     raise Exception("reports were complete!")
+
     def test_parse_day(self):
         """does day parsing work?"""
         self.assertEqual(parse_day("Mon"), 0)
         self.assertEqual(parse_day("mon"), 0)
         self.assertEqual(parse_day(0),0)
         self.assertEqual(parse_day("0"), 0)
+        self.assertEqual(parse_day('wed'), 2)
