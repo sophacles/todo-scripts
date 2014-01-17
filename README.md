@@ -66,3 +66,6 @@ into strings and separated by newlines.
 The `get_todo_env` function will return the requested value from the relevant
 todo.cfg. It uses the module level variable `CONFIG_FILE` to determine where
 the todo.cfg lives, defaulting to `~/.todo.cfg`.
+
+## Things to do etc
+* Figure out how to properly handle deleted checklist configs. (perhaps inactive... or somethign)

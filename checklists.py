@@ -252,6 +252,9 @@ def process_todos(todos, checklist_items):
         if 'checklist' not in task.tags:
             continue
         clid, status = task.tags['checklist'].partition('_')[::2]
+        # ignore tasks that are from deleted checklist items
+        if not clid in task_lists:
+            continue
         task_lists[clid].append(task)
 
     new_tasks = []
