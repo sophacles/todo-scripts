@@ -367,6 +367,8 @@ def do_list_items(checklist_items, args):
         print "%3d: %s" %(n, str(item))
 
 def do_processing(checklist_items, args):
+    from os.path import join as J
+
     if checklist_items is None:
         # nothing todo
         return
