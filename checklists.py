@@ -390,7 +390,7 @@ def do_processing(checklist_items, args):
     dones.open()
 
     all_todos = todos.tasks + dones.tasks
-    new_todos = process_todos(all_todos, items)
+    new_todos = process_todos(all_todos, checklist_items)
     todos.tasks.extend(new_todos)
     todos.save()
     dones.save()
