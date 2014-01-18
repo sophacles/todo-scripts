@@ -1,0 +1,12 @@
+#!/bin/sh
+
+# todo - figure out how to use the right python, even if in a
+# virtual env that may not have checklists installed
+
+PYTHON="/usr/local/bin/python"
+
+#ignore first arg, it's just 'checklist'
+
+shift
+
+$PYTHON -m checklists $@

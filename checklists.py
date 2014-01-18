@@ -275,7 +275,6 @@ def serialize_cl_items(items):
 
 def make_args():
     parser = argparse.ArgumentParser()
-    #global args
     parser.add_argument("-f", "--file", default="checklist.json",
             help="The file containing checklist item configuration")
     parser.add_argument("-c", "--config_file", default="~/.todo.cfg",
@@ -360,14 +359,14 @@ def do_remove_item(checklist_items, args):
 
 
 def do_list_items(checklist_items, args):
-    print "Current checklists:"
+    print("Current checklists:")
 
     if checklist_items is None or len(checklist_items) == 0:
-        print "No items"
+        print("No items")
         return
 
     for n, item in enumerate(checklist_items, 1):
-        print "%3d: %s" %(n, str(item))
+        print ("%3d: %s" %(n, str(item)))
 
 def do_processing(checklist_items, args):
     from os.path import join as J
@@ -383,8 +382,6 @@ def do_processing(checklist_items, args):
     # save each of the files, we have the processing info, and preserved order
 
     tdir = get_todo_env("TODO_DIR")
-
-    # TODO: handle fake date
 
 
     todos = TodoFile(J(tdir,"todo.txt"))
