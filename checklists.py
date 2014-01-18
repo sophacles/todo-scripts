@@ -37,7 +37,9 @@ def parse_day(day):
 class ChecklistItem(object):
     def __init__(self, **kw):
         # if no id is provided, just use one
-        self.id = kw.get('id', uuid.uuid4())
+        self.id = kw.get('id', None)
+        if self.id is None:
+            self.id = uuid.uuid4()
         self.text = kw.get('text','')
 
     def __str__(self):
@@ -59,13 +61,13 @@ class ChecklistItem(object):
     def past_due(self, latest_task):
         raise NotImplemented("This is for subclasses silly")
 
-    def shedule_next(self, latest_task):
+    def schedule_next(self, latest_task):
         raise NotImplemented("This is for subclasses silly")
 
     def process(self, latest_task):
         new_task = Task(self.text, tags = {"checklist":self.id}, autodate=True)
 
-        if latest_task is None:
+        if latest_task is None and self.schedule_next(None):
             return new_task
 
         # task is not fully processed
@@ -91,7 +93,7 @@ class ChecklistItem(object):
 
     def toJSON(self):
         res = {}
-        res['id'] = self.id
+        res['id'] = str(self.id)
         res['text'] = self.text
         return res
 
@@ -117,6 +119,8 @@ class Daily(ChecklistItem):
         return False
 
     def schedule_next(self, latest_task):
+        if latest_task is None:
+            return True
         return self.past_due(latest_task)
 
     def toJSON(self):
@@ -130,7 +134,7 @@ class Weekly(ChecklistItem):
         self.day_of_week = parse_day(kw.get('day', 6)) #default to sunday
 
         # keep the math simple in sched -- never conflict
-        self.complete_time = min(int(kw.get('complete_time', 1)), 7) - 1
+        self.complete_time = max(min(int(kw.get('complete_time', 1)), 7) - 1, 0)
 
     def past_due(self, latest_task):
         today = get_today()
@@ -163,8 +167,8 @@ def add_months(sourcedate,months):
 class Monthly(ChecklistItem):
     def __init__(self, **kw):
         super(Monthly, self).__init__(**kw)
-        self.day_of_month = int(kw.get('day', 1))
-        self.complete_time = int(kw.get('complete_time', 1)) - 1
+        self.day_of_month = max(int(kw.get('day', 1)), 1)
+        self.complete_time = max(int(kw.get('complete_time', 1)) - 1, 0)
 
     def past_due(self, latest_task):
         today = get_today()
@@ -196,8 +200,8 @@ class Monthly(ChecklistItem):
 class Floating(ChecklistItem):
     def __init__(self, **kw):
         super(Floating, self).__init__(**kw)
-        self.complete_time = int(kw.get('complete_time', 1)) - 1
-        self.wait = int(kw.get("wait", 0))
+        self.complete_time = max(int(kw.get('complete_time', 1)) - 1, 0)
+        self.wait = max(int(kw.get("wait", 0)),0)
 
     def past_due(self, latest_task):
         today = get_today()
@@ -208,6 +212,8 @@ class Floating(ChecklistItem):
 
     def schedule_next(self, latest_task):
         today = get_today()
+        if latest_task is None:
+            return True
         if (today - latest_task.finish).days >= self.wait:
             return True
         return False
@@ -228,6 +234,8 @@ def parse_cl_items(s):
                 "daily":Daily
                }
 
+    if len(s) == 0:
+        return []
     raw = json.loads(s)
     il = []
     for d in raw:
@@ -298,9 +306,10 @@ def make_args():
     add.add_argument("-t", "--type", help="type of checklistitem",
             choices=['daily', 'weekly', 'monthly', 'floating'])
     add.add_argument("--day", help="day to do the argument (not in floating, daily can be a day name)")
-    add.add_argument("--complete", '--ct', '--complete_time', dest="complete_time", type=int,
+    add.add_argument("--complete", '--ct', '--complete_time', dest="complete_time", type=int, default=0,
             help="time to complete this task (not in daily)")
-    add.add_argument("--wait", type=int, help="days after completion for new task (float only)")
+    add.add_argument("--wait", type=int, default=0,
+            help="days after completion for new task (float only)")
     add.add_argument("--id", help="unique id for this task. if not supplied generates uuid")
     add.add_argument("text", nargs=argparse.REMAINDER)
     add.set_defaults(func=do_add_item)
@@ -332,7 +341,9 @@ def main():
             item_file.write("")
 
     with open(J(tdir, info.file), 'r') as item_file:
-        checklist_items = parse_cl_items(item_file.read())
+        istring = item_file.read()
+        istring = istring.strip()
+        checklist_items = parse_cl_items(istring)
 
     updated_items = info.func(checklist_items, info)
 
@@ -353,6 +364,8 @@ def do_add_item(checklist_items, args):
 
 def do_remove_item(checklist_items, args):
     # human indexing vs real indexing
+    if len(checklist_items) == 0:
+        return
     n = args.which - 1
     del checklist_items[n]
     return checklist_items

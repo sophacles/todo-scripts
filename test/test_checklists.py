@@ -51,7 +51,9 @@ class TestChecklistItemCommon(TestCase):
 
     def test_process_no_history(self):
         """Base: ensure no history is OK"""
-        i = ChecklistItem(id=self.test_id, text=self.test_text)
+        # must have simple schedule next because not implemented...
+        class TI(SchedulePasses, ChecklistItem): pass
+        i = TI(id=self.test_id, text=self.test_text)
         t = i.process(None)
         self.assertEqual(t.tags['checklist'], self.test_id)
         self.assertEqual(t.task, self.test_text)
@@ -118,8 +120,10 @@ class TestDaily(TestCase):
     def test_scheduleNext(self):
         """Daily schedule next"""
         d = Daily(id=self.test_id, text=self.test_text)
-        self.assertTrue(d.past_due(self.past_due))
-        self.assertFalse(d.past_due(self.current))
+        self.assertTrue(d.schedule_next(self.past_due))
+        self.assertFalse(d.schedule_next(self.current))
+        # if there isn't one.... schedule it
+        self.assertTrue(d.schedule_next(None))
 
 class TestWeekly(TestCase):
     def setUp(self):
@@ -177,8 +181,12 @@ class TestWeekly(TestCase):
         # today is the right day, or not. Remember, the test day is a saturday
         w = Weekly(id=self.test_id, text=self.test_text, day=5)
         self.assertTrue(w.schedule_next(self.current))
+        # today is the right day, there is nothing in the past - should happen
+        self.assertTrue(w.schedule_next(None))
         w = Weekly(id=self.test_id, text=self.test_text, day=4)
         self.assertFalse(w.schedule_next(self.current))
+        # wrong day, don't shcedule
+        self.assertFalse(w.schedule_next(None))
 
 class TestMonthly(TestCase):
     def setUp(self):
@@ -255,10 +263,16 @@ class TestMonthly(TestCase):
         # today is the right day, or not. Remember, the test day is a saturday
         m = Monthly(id=self.test_id, text=self.test_text, day=21)
         self.assertTrue(m.schedule_next(self.current))
+        # If and only if today is the right day, schedule one.
+        self.assertTrue(m.schedule_next(None))
         m = Monthly(id=self.test_id, text=self.test_text, day=15)
         self.assertFalse(m.schedule_next(self.current))
+        # wrong day, don't schedule
+        self.assertFalse(m.schedule_next(None))
         m = Monthly(id=self.test_id, text=self.test_text, day=30)
         self.assertFalse(m.schedule_next(self.current))
+        # wrong day, don't schedule
+        self.assertFalse(m.schedule_next(None))
 
     def test_rollover_sched(self):
         """Monthly test with a rollover on scheduling"""
@@ -307,6 +321,8 @@ class TestFloating(TestCase):
         self.current.finish = date(2013,12,21)
         self.assertTrue(f.schedule_next(self.past_due))
         self.assertTrue(f.schedule_next(self.current))
+        # always schedule one if there isn't a past one
+        self.assertTrue(f.schedule_next(None))
 
     def test_schedule_next_hard(self):
         """Floating test schedule_next wait time"""
